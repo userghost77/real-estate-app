@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  validation-agent:
+    build: ./snet_agents/validation_agent
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./snet_agents/validation_agent:/app
+    command: python validation_agent.py
+
+  valuation-agent:
+    build: ./snet_agents/valuation_agent
+    ports:
+      - "5002:5000"
+    volumes:
+      - ./snet_agents/valuation_agent:/app
+    command: python valuation_agent.py
+
+  recommendation-agent:
+    build: ./snet_agents/recommendation_agent
+    ports:
+      - "5003:5000"
+    volumes:
+      - ./snet_agents/recommendation_agent:/app
+    command: python recommendation_agent.py

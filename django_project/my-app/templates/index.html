@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNet Agent Tester</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        form { margin-bottom: 2em; padding: 1.5em; border: 1px solid #ddd; border-radius: 5px; }
+        label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        pre { background-color: #eee; padding: 1em; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Real Estate SNet Agent Tester</h1>
+
+    <!-- Validation Agent Form -->
+    <section>
+        <h2>1. Validate Property</h2>
+        <form id="validation-form">
+            <label for="val-prop-id">Property ID:</label>
+            <input type="text" id="val-prop-id" value="p123" required>
+
+            <label for="val-kyc">KYC Status:</label>
+            <input type="text" id="val-kyc" value="approved" required>
+
+            <label for="val-area">Area (sqft):</label>
+            <input type="number" id="val-area" value="1500" required>
+
+            <label for="val-docs">Documents (comma-separated):</label>
+            <input type="text" id="val-docs" value="title_deed,tax_receipt">
+
+            <button type="submit">Validate</button>
+        </form>
+        <h3>Response:</h3>
+        <pre id="validation-response">Awaiting submission...</pre>
+    </section>
+
+    <!-- Valuation Agent Form -->
+    <section>
+        <h2>2. Get Property Valuation</h2>
+        <form id="valuation-form">
+            <label for="val-loc">Location:</label>
+            <input type="text" id="val-loc" value="Mumbai" required>
+
+            <label for="val-area-2">Area (sqft):</label>
+            <input type="number" id="val-area-2" value="2000" required>
+
+            <label for="val-feature">Special Feature (optional):</label>
+            <input type="text" id="val-feature" value="sea-view">
+
+            <button type="submit">Get Valuation</button>
+        </form>
+        <h3>Response:</h3>
+        <pre id="valuation-response">Awaiting submission...</pre>
+    </section>
+
+    <!-- Recommendation Agent Form -->
+    <section>
+        <h2>3. Get Recommendations</h2>
+        <form id="recommendation-form">
+            <label for="rec-user-id">User ID:</label>
+            <input type="text" id="rec-user-id" value="user42" required>
+
+            <label for="rec-history">Viewed Properties (comma-separated IDs):</label>
+            <input type="text" id="rec-history" value="p1,p3">
+
+            <label for="rec-all-props">All Properties (JSON format):</label>
+            <textarea id="rec-all-props" rows="8" required>[
+    {"id": "p1", "type": "apartment", "location": "Delhi"},
+    {"id": "p2", "type": "villa", "location": "Mumbai"},
+    {"id": "p3", "type": "apartment", "location": "Delhi"},
+    {"id": "p4", "type": "penthouse", "location": "Delhi"},
+    {"id": "p5", "type": "villa", "location": "Bangalore"}
+]</textarea>
+
+            <button type="submit">Get Recommendations</button>
+        </form>
+        <h3>Response:</h3>
+        <pre id="recommendation-response">Awaiting submission...</pre>
+    </section>
+</div>
+
+<script>
+    // The base URL for your Django API
+    const API_BASE_URL = 'http://127.0.0.1:8000';
+
+    // Helper function to handle fetch requests
+    async function postData(url = '', data = {}, responseElementId) {
+        const responseElement = document.getElementById(responseElementId);
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            responseElement.textContent = JSON.stringify(result, null, 2);
+
+            if (!response.ok) {
+                console.error('API Error:', result);
+            }
+        } catch (error) {
+            console.error('Fetch Error:', error);
+            responseElement.textContent = `Error: ${error.message}. Is the Django server running?`;
+        }
+    }
+
+    // 1. Validation Form Handler
+    document.getElementById('validation-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const property_id = document.getElementById('val-prop-id').value;
+        const kyc_status = document.getElementById('val-kyc').value;
+        const area_sqft = parseInt(document.getElementById('val-area').value, 10);
+        const documents = document.getElementById('val-docs').value.split(',').filter(doc => doc.trim() !== '');
+
+        const payload = { property_id, kyc_status, area_sqft, documents };
+        postData(`${API_BASE_URL}/api/validate/`, payload, 'validation-response');
+    });
+
+    // 2. Valuation Form Handler
+    document.getElementById('valuation-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const location = document.getElementById('val-loc').value;
+        const area_sqft = parseInt(document.getElementById('val-area-2').value, 10);
+        const feature = document.getElementById('val-feature').value;
+
+        const payload = { location, area_sqft };
+        if (feature) {
+            payload.feature = feature;
+        }
+        postData(`${API_BASE_URL}/api/value/`, payload, 'valuation-response');
+    });
+
+    // 3. Recommendation Form Handler
+    document.getElementById('recommendation-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const user_id = document.getElementById('rec-user-id').value;
+        const user_history = document.getElementById('rec-history').value.split(',').filter(id => id.trim() !== '');
+        
+        let all_properties;
+        try {
+            all_properties = JSON.parse(document.getElementById('rec-all-props').value);
+        } catch (e) {
+            document.getElementById('recommendation-response').textContent = 'Error: "All Properties" is not valid JSON.';
+            return;
+        }
+
+        const payload = { user_id, user_history, all_properties };
+        postData(`${API_BASE_URL}/api/recommend/`, payload, 'recommendation-response');
+    });
+</script>
+
+</body>
+</html>
+
+```
+
+### How to Use This File
+
+1.  **Save the File:** Create a directory named `templates` inside your `my-app` folder. Save the code above as `index.html` inside that `templates` directory.
+2.  **Create a View:** To make this page accessible, add a simple view in `my-app/views.py` to render it.
+   ```python
+   # Add this to my-app/views.py
+   from django.shortcuts import render
+   
+   def index_view(request):
+       return render(request, 'my-app/index.html')
+   ```
+3.  **Update URLs:** Add a path for the new view in `my-app/urls.py`.
+   ```python
+   # Add this to the urlpatterns list in my-app/urls.py
+   path('', views.index_view, name='index'),
+   ```
+4.  **Run Everything:**
+   *   Start each of your three Flask agents in separate terminal windows.
+   *   Start your Django development server (`python manage.py runserver`).
+5.  **Test:** Open your browser and go to `http://127.0.0.1:8000/`. You will see the forms. Fill them out and click the buttons to send requests to your backend and see the live responses from the agents.
+
+This setup provides a complete, self-contained testing environment for your entire application stack.
+
+<!--
+[PROMPT_SUGGESTION]How can I use a tool like `concurrently` to run all my servers with a single command?[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]How do I configure Django to handle CORS so a separate frontend application can call these APIs?[/PROMPT_SUGGESTION]

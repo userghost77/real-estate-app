@@ -1,0 +1,12 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install hyperon (MeTTa) and Flask
+RUN pip install hyperon-das flask
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["python", "validation_agent.py"]
