@@ -174,13 +174,13 @@
    # Add this to my-app/views.py
    from django.shortcuts import render
    
-   def index_view(request):
-       return render(request, 'my-app/index.html')
+   def index(request):
+       return render(request, 'index.html')
    ```
 3.  **Update URLs:** Add a path for the new view in `my-app/urls.py`.
    ```python
    # Add this to the urlpatterns list in my-app/urls.py
-   path('', views.index_view, name='index'),
+   path('', views.index, name='index'),
    ```
 4.  **Run Everything:**
    *   Start each of your three Flask agents in separate terminal windows.

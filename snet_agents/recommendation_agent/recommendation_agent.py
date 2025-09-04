@@ -1,5 +1,8 @@
+import logging
 from flask import Flask, request, jsonify
 from hyperon import MeTTa
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 
@@ -7,10 +10,12 @@ app = Flask(__name__)
 def recommend_properties():
     data = request.get_json()
     if not data:
+        logging.warning("Recommendation request missing payload.")
         return jsonify({"error": "Invalid input: No JSON payload"}), 400
 
     user_id = data.get('user_id')
     if not user_id:
+        logging.warning("Recommendation request missing user_id.")
         return jsonify({"error": "Invalid input: user_id is required"}), 400
 
     user_history = data.get('user_history', []) # List of viewed property IDs
@@ -31,7 +36,10 @@ def recommend_properties():
         metta.run(f'(viewed-by {user_id} {viewed_id})')
 
     # Run query to find all recommendations
-    result = metta.run(f"!(should-recommend {user_id} $rec)")
+    query = f"!(should-recommend {user_id} $rec)"
+    logging.info(f"Running MeTTa query: {query}")
+    result = metta.run(query)
+    logging.info(f"MeTTa result: {result}")
 
     recommendations = set()
     if result:
@@ -40,9 +48,8 @@ def recommend_properties():
             try:
                 # Expected structure: ((SymbolAtom:,),)
                 recommendations.add(res[0][0].get_object().value)
-            except (IndexError, AttributeError):
-                # Log this unexpected result format if you have logging configured
-                pass
+            except (IndexError, AttributeError) as e:
+                logging.error(f"Error parsing recommendation result: {e}\nResult item was: {res}")
 
     return jsonify({"user_id": user_id, "recommendations": list(recommendations)})
 
